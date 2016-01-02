@@ -9,10 +9,10 @@ EXTRA_DIST = README.rst LICENSE
 
 doc_DATA = README.rst LICENSE
 
-dist_man_MANS = vmod_example.3
+dist_man_MANS = vmod_signature.3
 MAINTAINERCLEANFILES = $(dist_man_MANS)
 
-vmod_example.3: src/vmod_example.man.rst
+vmod_signature.3: src/vmod_signature.man.rst
 
 %.1 %.2 %.3 %.4 %.5 %.6 %.7 %.8 %.9:
 if HAVE_RST2MAN
