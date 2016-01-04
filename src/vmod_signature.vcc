@@ -1,27 +1,7 @@
-#
-# Copyright YOU (c) 1900.
-#
-# (vmodtool requires this format.)
-#
-
-$Module signature 3 Example VMOD
-
-DESCRIPTION
-===========
-
-This is the embedded documentation for the signature VMOD. It should
-mention what the vmod is intended to do.
-
-It can span multiple lines and is written in RST format.
-You can even have links and lists in here:
-
-* https://github.com/varnish/libvmod-signature/
-* https://www.varnish-cache.org/
-
-The init-function declared next does not have documentation.
-
+$Module signature 3 Varnish Signature VMOD
 $Init init_function
-$Function STRING hello(STRING)
+$Function BOOL valid_signature(STRING, STRING, STRING)
 
-The different functions provided by the VMOD should also have their own
-embedded documentation. This section is for the hello() function.
+# $Function VOID parse_policy(STRING)
+# $Function TIME date_less_than()
+# $Function STRING resource_url()
