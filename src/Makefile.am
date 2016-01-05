@@ -3,7 +3,7 @@ AM_CPPFLAGS = @VMOD_INCLUDES@ -Wall -Werror
 vmoddir = @VMOD_DIR@
 vmod_LTLIBRARIES = libvmod_signature.la
 
-libvmod_signature_la_LDFLAGS = -module -export-dynamic -avoid-version -shared
+libvmod_signature_la_LDFLAGS = -module -export-dynamic -avoid-version -shared -lssl
 
 libvmod_signature_la_SOURCES = \
 	vmod_signature.c

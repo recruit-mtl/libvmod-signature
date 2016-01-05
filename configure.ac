@@ -24,6 +24,10 @@ AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AC_PROG_MAKE_SET
 
+AC_CHECK_LIB([ssl], [SSL_library_init], [AC_DEFINE([HAVE_OPENSSL],[1],[Define we have openssl])],
+		[AC_MSG_ERROR([libvmod-signature requires openssl.])])
+AC_CHECK_HEADER([openssl/evp.h])
+
 # Check for rst utilities
 AC_CHECK_PROGS(RST2MAN, [rst2man rst2man.py], "no")
 if test "x$RST2MAN" = "xno"; then
