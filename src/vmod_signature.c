@@ -73,6 +73,7 @@ vmod_valid_signature(VRT_CTX, VCL_STRING msg_b64, VCL_STRING sig_b64, VCL_STRING
 	evp_ctx = EVP_MD_CTX_create();
 	AN(evp_ctx);
 
+	OpenSSL_add_all_digests();
 	const EVP_MD* md = EVP_get_digestbyname("SHA1");
 	AN(md);
 
@@ -84,7 +85,7 @@ vmod_valid_signature(VRT_CTX, VCL_STRING msg_b64, VCL_STRING sig_b64, VCL_STRING
 	rsa = PEM_read_bio_RSAPublicKey(bio, &rsa, 0, NULL);
 	vkey = EVP_PKEY_new();
 	AN(vkey);
-	rc = EVP_PKEY_assign_RSA(vkey, RSAPrivateKey_dup(rsa));
+	rc = EVP_PKEY_assign_RSA(vkey, RSAPublicKey_dup(rsa));
 	assert(rc == 1);
 
 	rc = EVP_DigestVerifyInit(evp_ctx, NULL, md, NULL, vkey);
