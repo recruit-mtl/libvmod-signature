@@ -1,0 +1,43 @@
+varnishtest "Test signature vmod"
+
+server s1 {
+       rxreq
+       txresp
+} -start
+
+varnish v1 -vcl+backend {
+	import signature from "${vmod_topbuild}/src/.libs/libvmod_signature.so";
+
+	sub vcl_deliver {
+		set resp.http.Var_Message = "吾輩は猫である";
+
+		set resp.http.Var_Signature = "I2NjSC5IM3o6II54M5Ock4pfyl0hTR1bclPNJQ+x8j9Bx8Rncz1pZZy98GP4wtSINLXFogmCQFVHok/8/PSDVLTP5x1VexovUizWjJsntfO534i1WoUyS03ArqaTwZEXV7CHCSmHu9OruBRHoPKc2iic+SEaUz8NuT2gqzuv8ZI=";
+		set resp.http.Var_Psuedo_Signature = "I+iyXsEdd6AAc3jG4Mao10vUAwHj5urjRJC8d1iBVQriNEhHPEwrqzWW4KCv1txwrUWUpq3IULYrJI9bA35exs2q4lbj05O4EEV4PI0kJAZa9S0LKF20haKzP5kI9Ces+JXa8qOV60vSag5w889b1gHrUr4y4415W4PMz1sZvntpL0R1xvOdr15IUrhsYetT/f+wvAIj2B1eea2rIaBpGo5YMl/hjVbtpKUdR5/iLfEL40xKei0g1v8JL2LBNr8tuCLlbnJYsOlDXy0uVZpFAHiZTvLBAMmRNBbVzo2jhMJkgbeDghB7YWbjkA1o90OQHuyLGZEEdzvtdB6UmqH98Q==";
+
+		set resp.http.Var_Public_Key = {"-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAMtTkwOx7XYzs4rNn9pNDzWtDIJkS/hwHaQnYlG39d4B941TO4rbIYUl
+6NGGG+H3ObRIUNtR5FRId0PIZmy5fuyBJSeY73b1jWmLeq7Ht5EPjOTzxOYTYCCA
+L+tAxNDFPcbr5OYYc324OCYV5oq4cYhH4jBYECnCzlRsvocf8cczAgMBAAE=
+-----END RSA PUBLIC KEY-----"};
+
+		set resp.http.X_Test_Result = signature.valid_signature(resp.http.Var_Message, resp.http.Var_Signature, resp.http.Var_Public_Key);
+		set resp.http.X_Test_Result2 = signature.valid_signature(resp.http.Var_Message, resp.http.Var_Psuedo_Signature, resp.http.Var_Public_Key);
+
+		unset resp.http.Var_Public_Key;
+		unset resp.http.Var_Message;
+		unset resp.http.Var_Signature;
+		unset resp.http.Var_Psuedo_Signature;
+	}
+} -start
+
+client c1 {
+	txreq -url "/"
+	rxresp
+
+	# With correct signature and pulic key
+	expect resp.http.X_Test_Result == true
+	# With psuedo signature and correct pulic key
+	expect resp.http.X_Test_Result2 == false
+}
+
+client c1 -run
