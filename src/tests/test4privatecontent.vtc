@@ -1,0 +1,90 @@
+varnishtest "Test signature vmod for Private Content in AWS CloudFront"
+
+server s1 {
+    rxreq
+    txresp
+    rxreq
+    txresp
+    rxreq
+    txresp
+    rxreq
+    txresp
+} -start
+
+varnish v1 -vcl+backend {
+    import std;
+    import signature from "${vmod_topbuild}/src/.libs/libvmod_signature.so";
+
+    sub vcl_deliver {
+        if (req.url ~ "\?") {
+            // Extract GET Parameters
+            set resp.http.Var_Expires = regsub(req.url,  ".*[?&]Expires=(\w+).*", "\1");
+            set resp.http.Var_Signature = regsub(req.url,  ".*[?&]Signature=([\w-_~]+).*", "\1");
+            set resp.http.Var_KPI = regsub(req.url,  ".*[?&]Key-Pair-Id=(\w+).*", "\1");
+
+            // Replace Invalid Characters for Base64 in Signature Parameter
+            set resp.http.Var_Signature = regsuball(resp.http.Var_Signature,  "-", "+");
+            set resp.http.Var_Signature = regsuball(resp.http.Var_Signature,  "_", "=");
+            set resp.http.Var_Signature = regsuball(resp.http.Var_Signature,  "~", "/");
+
+            // Extract URL without All Parameters
+            set req.url = regsub(req.url,  "(.*)\?.*", "\1");
+            // Construct Plain Text
+            set resp.http.Var_Plain = {"{"Statement":[{"Resource":""} + "http://" + req.http.host + req.url + {"","Condition":{"DateLessThan":{"AWS:EpochTime":"} + resp.http.Var_Expires + "}}}]}";
+
+            // Set THE Public Key
+            if(resp.http.Var_KPI ~ "ABCDEFGHIJKLM"){
+                set resp.http.Var_PKey = {"-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAMtTkwOx7XYzs4rNn9pNDzWtDIJkS/hwHaQnYlG39d4B941TO4rbIYUl
+6NGGG+H3ObRIUNtR5FRId0PIZmy5fuyBJSeY73b1jWmLeq7Ht5EPjOTzxOYTYCCA
+L+tAxNDFPcbr5OYYc324OCYV5oq4cYhH4jBYECnCzlRsvocf8cczAgMBAAE=
+-----END RSA PUBLIC KEY-----"};
+            }else if(resp.http.Var_KPI ~ "NOPQRSTUVWXYZ"){
+                set resp.http.Var_PKey = {"-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBANsLiihBgAN0cp9Qmbs5H0wHUgeFNJcjr9gyTe6L/molD49pgijMKO04
+5BP0LJIj5ZCIUBCzKTnWbGclGJHDoUPKrDWefZ0rRpx9ULwaRhK/82m8vJPFYUQ1
+nvKJN7TgevCZTHnZHbeZd/reAubeKbp84EdDoR+SvcAdyOJ9/U91AgMBAAE=
+-----END RSA PUBLIC KEY-----"};
+            }
+
+            if(resp.http.Var_PKey && signature.valid_signature(resp.http.Var_Plain, resp.http.Var_Signature, resp.http.Var_PKey)){
+                // If request is not expired, set the result to TRUE.
+                set resp.http.X_Test_Result = std.integer(resp.http.Var_Expires, 0) >= std.time2integer(now);
+            }else{
+                // If public key is empty or verification of signature is failed
+                set resp.http.X_Test_Result = false;
+            }
+
+            // Unset Needless Parameters
+            unset resp.http.Var_PKey;
+            unset resp.http.Var_Plain;
+            unset resp.http.Var_Expires;
+            unset resp.http.Var_Signature;
+            unset resp.http.Var_KPI;
+        }
+    }
+} -start
+
+client c1 {
+    # Case1: Key Pair Id(ABCDEFGHIJKLM) matches the signature but request is expired.
+    txreq -url "http://example.cloudfront.net/video.mp4?Expires=0&Signature=dTwbkoCn8iv1Czl-D-OEAuLhDkBXHmUDTtX7jBJtPgLy9kLvcvS~q~IAEBWzQLZbtu2Y8icHAd0evW9b4pNBEGJJV29TTeaF8P1dQnJ-YObGvBNjLarNAz6a5CAJrvuztYK87mTAlofADyZFyrbiybdpE0M3auKRjaKXi9IwkDc_&Key-Pair-Id=ABCDEFGHIJKLM"
+    rxresp
+    expect resp.http.X_Test_Result == false
+
+    # Case2: Key Pair Id(NOPQRSTUVWXYZ) matches the signature and request is not expired.
+    txreq -url "http://example.cloudfront.net/video.mp4?Expires=9999999999&Signature=khwgCV2vR7jOBhB8eqFz9MXogEcOwhPONPL-VuD1rLBqCxUnzil10F1S1aiCRT67d7wv3PCHNERchDQRred6ZgwDJJauFXonSuEdlSAdfMh9P7OMKZpPzkGwiFJNmTHa6h~cN~xVxnoyEZPo9OcRkOaf0jX5n1RADtVVRm5meZE_&Key-Pair-Id=NOPQRSTUVWXYZ"
+    rxresp
+    expect resp.http.X_Test_Result == true
+
+    # Case3: Key Pair Id(ABCDEFGHIJKLM) does not match the signature.
+    txreq -url "http://example.cloudfront.net/video.mp4?Expires=9999999999&Signature=khwgCV2vR7jOBhB8eqFz9MXogEcOwhPONPL-VuD1rLBqCxUnzil10F1S1aiCRT67d7wv3PCHNERchDQRred6ZgwDJJauFXonSuEdlSAdfMh9P7OMKZpPzkGwiFJNmTHa6h~cN~xVxnoyEZPo9OcRkOaf0jX5n1RADtVVRm5meZE_&Key-Pair-Id=ABCDEFGHIJKLM"
+    rxresp
+    expect resp.http.X_Test_Result == false
+
+    # Case4: Key Pair Id does not exist.
+    txreq -url "http://example.cloudfront.net/video.mp4?Expires=9999999999&Signature=khwgCV2vR7jOBhB8eqFz9MXogEcOwhPONPL-VuD1rLBqCxUnzil10F1S1aiCRT67d7wv3PCHNERchDQRred6ZgwDJJauFXonSuEdlSAdfMh9P7OMKZpPzkGwiFJNmTHa6h~cN~xVxnoyEZPo9OcRkOaf0jX5n1RADtVVRm5meZE_&Key-Pair-Id="
+    rxresp
+    expect resp.http.X_Test_Result == false
+}
+
+client c1 -run
