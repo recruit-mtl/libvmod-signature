@@ -34,17 +34,19 @@ varnish v1 -vcl+backend {
 
             // Set THE Public Key
             if(resp.http.Var_KPI ~ "ABCDEFGHIJKLM"){
-                set resp.http.Var_PKey = {"-----BEGIN RSA PUBLIC KEY-----
-MIGJAoGBAMtTkwOx7XYzs4rNn9pNDzWtDIJkS/hwHaQnYlG39d4B941TO4rbIYUl
-6NGGG+H3ObRIUNtR5FRId0PIZmy5fuyBJSeY73b1jWmLeq7Ht5EPjOTzxOYTYCCA
-L+tAxNDFPcbr5OYYc324OCYV5oq4cYhH4jBYECnCzlRsvocf8cczAgMBAAE=
------END RSA PUBLIC KEY-----"};
+                set resp.http.Var_PKey = {"-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDLU5MDse12M7OKzZ/aTQ81rQyC
+ZEv4cB2kJ2JRt/XeAfeNUzuK2yGFJejRhhvh9zm0SFDbUeRUSHdDyGZsuX7sgSUn
+mO929Y1pi3qux7eRD4zk88TmE2AggC/rQMTQxT3G6+TmGHN9uDgmFeaKuHGIR+Iw
+WBApws5UbL6HH/HHMwIDAQAB
+-----END PUBLIC KEY-----"};
             }else if(resp.http.Var_KPI ~ "NOPQRSTUVWXYZ"){
-                set resp.http.Var_PKey = {"-----BEGIN RSA PUBLIC KEY-----
-MIGJAoGBANsLiihBgAN0cp9Qmbs5H0wHUgeFNJcjr9gyTe6L/molD49pgijMKO04
-5BP0LJIj5ZCIUBCzKTnWbGclGJHDoUPKrDWefZ0rRpx9ULwaRhK/82m8vJPFYUQ1
-nvKJN7TgevCZTHnZHbeZd/reAubeKbp84EdDoR+SvcAdyOJ9/U91AgMBAAE=
------END RSA PUBLIC KEY-----"};
+                set resp.http.Var_PKey = {"-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDbC4ooQYADdHKfUJm7OR9MB1IH
+hTSXI6/YMk3ui/5qJQ+PaYIozCjtOOQT9CySI+WQiFAQsyk51mxnJRiRw6FDyqw1
+nn2dK0acfVC8GkYSv/NpvLyTxWFENZ7yiTe04HrwmUx52R23mXf63gLm3im6fOBH
+Q6Efkr3AHcjiff1PdQIDAQAB
+-----END PUBLIC KEY-----"};
             }
 
             if(resp.http.Var_PKey && signature.valid_signature(resp.http.Var_Plain, resp.http.Var_Signature, resp.http.Var_PKey)){

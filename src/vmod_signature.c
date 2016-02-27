@@ -82,7 +82,7 @@ vmod_valid_signature(VRT_CTX, VCL_STRING msg_b64, VCL_STRING sig_b64, VCL_STRING
 
 	bio = BIO_new_mem_buf((void *)pub_key, strlen(pub_key));
 	AN(bio);
-	rsa = PEM_read_bio_RSAPublicKey(bio, &rsa, 0, NULL);
+	rsa = PEM_read_bio_RSA_PUBKEY(bio, &rsa, 0, NULL);
 	vkey = EVP_PKEY_new();
 	AN(vkey);
 	rc = EVP_PKEY_assign_RSA(vkey, RSAPublicKey_dup(rsa));
