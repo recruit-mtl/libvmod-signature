@@ -37,7 +37,7 @@ Description
 Example
         ::
 
-                set resp.http.hello = signature.valid_signature(<"plain message">, <"signature in Base64 encoded">, <"rsa public key">);
+                set resp.http.is_valid = signature.valid_signature(<"plain message">, <"signature in Base64 encoded">, <"public key">);
 
 INSTALLATION
 ============
@@ -76,18 +76,16 @@ In your VCL you could then use this vmod along the following lines::
         sub vcl_deliver {
                 set resp.http.Var_Message = "吾輩は猫である";
                 set resp.http.Var_Signature = "I2NjSC5IM3o6II54M5Ock4pfyl0hTR1bclPNJQ+x8j9Bx8Rncz1pZZy98GP4wtSINLXFogmCQFVHok/8/PSDVLTP5x1VexovUizWjJsntfO534i1WoUyS03ArqaTwZEXV7CHCSmHu9OruBRHoPKc2iic+SEaUz8NuT2gqzuv8ZI=";
-                set resp.http.Var_Public_Key = {"-----BEGIN RSA PUBLIC KEY-----
-        MIGJAoGBAMtTkwOx7XYzs4rNn9pNDzWtDIJkS/hwHaQnYlG39d4B941TO4rbIYUl
-        6NGGG+H3ObRIUNtR5FRId0PIZmy5fuyBJSeY73b1jWmLeq7Ht5EPjOTzxOYTYCCA
-        L+tAxNDFPcbr5OYYc324OCYV5oq4cYhH4jBYECnCzlRsvocf8cczAgMBAAE=
-        -----END RSA PUBLIC KEY-----"};
+                set resp.http.Var_Public_Key = {"-----BEGIN PUBLIC KEY-----
+        MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDLU5MDse12M7OKzZ/aTQ81rQyC
+        ZEv4cB2kJ2JRt/XeAfeNUzuK2yGFJejRhhvh9zm0SFDbUeRUSHdDyGZsuX7sgSUn
+        mO929Y1pi3qux7eRD4zk88TmE2AggC/rQMTQxT3G6+TmGHN9uDgmFeaKuHGIR+Iw
+        WBApws5UbL6HH/HHMwIDAQAB
+        -----END PUBLIC KEY-----"};
 
                 # This sets resp.http.is_valid to true or false
                 set resp.http.is_valid = signature.valid_signature(resp.http.Var_Message, resp.http.Var_Signature, resp.http.Var_Public_Key);
         }
-
-**NOTE:**
- The public key is formatting in the PEM RSAPublicKey. Not formatting in the PEM(`ref <https://openssl.org/docs/manmaster/apps/rsa.html>`_).
 
 COMMON PROBLEMS
 ===============
