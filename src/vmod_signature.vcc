@@ -1,7 +1,3 @@
 $Module signature 3 Varnish Signature VMOD
 $Init init_function
 $Function BOOL valid_signature(STRING, STRING, STRING)
-
-# $Function VOID parse_policy(STRING)
-# $Function TIME date_less_than()
-# $Function STRING resource_url()
